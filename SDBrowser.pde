@@ -30,76 +30,79 @@ void setup() {
 }
 
 void printDirectory(File dir, int numTabs) {
+ 
    while(true) {
 
-     File entry =  dir.openNextFile();
-     if (! entry) {
-       // no more files
-       // return to the first file in the directory
-       dir.rewindDirectory();
-       break;
-     }
-     for (uint8_t i=0; i<numTabs; i++) {
-       Serial.print('\t');
-     }
-     Serial.print(entry.name());
-     if (entry.isDirectory()) {
-       Serial.println("/");
-       printDirectory(entry, numTabs+1);
-     } else {
-       // files have sizes, directories do not
-       Serial.print("\t\t");
-       Serial.println(entry.size(), DEC);
-     }
+      Serial.println("check");
+      File entry =  dir.openNextFile();
+      if (! entry) {
+         // no more files
+         // return to the first file in the directory
+         dir.rewindDirectory();
+         Serial.println("break");
+         break;
+      }
+      for (uint8_t i=0; i<numTabs; i++) {
+         Serial.print('\t');
+      }
+      Serial.print(entry.name());
+      if (entry.isDirectory()) {
+         Serial.println("/");
+         //printDirectory(entry, numTabs+1);
+      } else {
+         // files have sizes, directories do not
+         Serial.print("\t\t");
+         Serial.println(entry.size(), DEC);
+      }
    }
 }
 void processCommand(const char * command) {
-	Serial.print("> ");
-      if (strcmp(command, "help") == 0 || strcmp(command, "?") == 0  ) {
-	Serial.println("mount, ls, unmount files.");
-      }
+   if (strcmp(command, "help") == 0 || strcmp(command, "?") == 0  ) {
+      Serial.println("mount, ls, touch, cat, unmount files.");
+   }
 
-      if (strcmp (command, "mount") == 0 ) {
-        Serial.println("Mounting SD Card");
-	digitalWrite(chipSelect_SD_default, HIGH);
-	digitalWrite(chipSelect_SD, HIGH);
-	init_SD = SD.begin(chipSelect_SD);
-          if (init_SD) {
-            Serial.println("Card opened.");
-          } 
-          else {
-            Serial.println("Card failed to open.");
-          }
+   if (strcmp (command, "mount") == 0 ) {
+      Serial.println("Mounting SD Card");
+      digitalWrite(chipSelect_SD_default, HIGH);
+      digitalWrite(chipSelect_SD, HIGH);
+      init_SD = SD.begin(chipSelect_SD);
+      if (init_SD) {
+         Serial.println("Card opened.");
+      } 
+      else {
+         Serial.println("Card failed to open.");
       }
-      if (strcmp (command, "unmount") == 0) {
-        Serial.println("UnMounting SD Card");
-        Serial.println("Cannot close and SD object. pins pulled low.");
-	digitalWrite(chipSelect_SD_default, LOW);
-	digitalWrite(chipSelect_SD, LOW);
+   }
+   if (strcmp (command, "unmount") == 0) {
+      Serial.println("UnMounting SD Card");
+      Serial.println("Cannot close and SD object. pins pulled low.");
+      digitalWrite(chipSelect_SD_default, LOW);
+      digitalWrite(chipSelect_SD, LOW);
+   }
+   if (strcmp (command, "ls") == 0) {
+      Serial.println("Listing SD Card");
+      File dir = SD.open("/");
+      printDirectory(dir, 0);
+      dir.close();
+      return;
+   }
+   if (strcmp (command, "touch") == 0) {
+      Serial.println("create file touched.txt");
+      File file = SD.open("/touched.txt", FILE_WRITE);
+      file.println("TOUCHED");
+      file.close();
+   }
+   if (strcmp (command, "cat") == 0) {
+      Serial.println("cat file touched.txt");
+      File file = SD.open("/touched.txt");
+      if (file) {	
+         while (file.available()) {
+            Serial.write(file.read());
+         }
+         file.close();
       }
-      if (strcmp (command, "ls") == 0) {
-        Serial.println("Listing SD Card");
-	File dir = SD.open("/");
-        printDirectory(dir, 0);
-	dir.close();
-      }
-      if (strcmp (command, "touch") == 0) {
-        Serial.println("create file touched.txt");
-	File file = SD.open("/touched.txt", FILE_WRITE);
-	file.println("TOUCHED");
-	file.close();
-      }
-      if (strcmp (command, "cat") == 0) {
-        Serial.println("cat file touched.txt");
-	File file = SD.open("/touched.txt");
-	if (file) {	
-	  while (file.available()) {
-		  Serial.write(file.read());
-	  }
-	  file.close();
-	}
-      }
- } 
+   }
+} 
 
 void processIncomingByte( const byte inByte) {
   static char buf[MAX_INPUT];
@@ -116,6 +119,7 @@ void processIncomingByte( const byte inByte) {
     //gCommand = buf;
     //reset count
     ii = 0;
+    Serial.print("> ");
     break;
    case '\n':
      break;
